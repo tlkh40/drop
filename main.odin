@@ -1,6 +1,5 @@
 package main
 
-// import "core:encoding/uuid"
 import "core:fmt"
 import "core:math"
 import "core:strings"
@@ -11,14 +10,13 @@ LENGTH_UNIT :: 64.0
 W_HEIGHT :: 700
 W_WIDTH :: 1000
 
-
 Block :: struct {
 	shape_id: b2d.ShapeId,
 	body_id:  b2d.BodyId,
 }
 
-Blocks: [dynamic]Block
-box_dimensions :: b2d.Vec2{64, 64}
+global_blocks: [dynamic]Block
+BOX_DIMENSIONS :: b2d.Vec2{64, 64}
 
 create_block :: proc(world: ^b2d.WorldId) {
 	if !rl.IsMouseButtonReleased(.RIGHT) {
@@ -26,7 +24,6 @@ create_block :: proc(world: ^b2d.WorldId) {
 	}
 
 	pos := rl.GetMousePosition()
-
 
 	box_def := b2d.DefaultBodyDef()
 	box_def.type = .dynamicBody
@@ -37,18 +34,17 @@ create_block :: proc(world: ^b2d.WorldId) {
 
 	box := b2d.CreateBody(world^, box_def)
 
-
-	polygon := b2d.MakeBox(box_dimensions.x, box_dimensions.y)
+	polygon := b2d.MakeBox(BOX_DIMENSIONS.x, BOX_DIMENSIONS.y)
 	box_shape_id := b2d.CreatePolygonShape(box, box_shape_def, polygon)
-	append(&Blocks, Block{body_id = box, shape_id = box_shape_id})
+	append(&global_blocks, Block{body_id = box, shape_id = box_shape_id})
 }
 
 destroy_blocks :: proc() {
-	for block in Blocks {
+	for block in global_blocks {
 		b2d.DestroyShape(block.shape_id)
 		b2d.DestroyBody(block.body_id)
 	}
-	clear_dynamic_array(&Blocks)
+	clear_dynamic_array(&global_blocks)
 }
 
 draw_blocks :: proc() {
@@ -56,24 +52,21 @@ draw_blocks :: proc() {
 	should_draw := false
 	at := rl.Vector2(0)
 	defer delete(to_remove)
-	for block, i in Blocks {
+	for block, i in global_blocks {
 		p := b2d.Body_GetWorldPoint(block.body_id, {0, 0})
 		rec := rl.Rectangle {
-			height = box_dimensions.x * 2,
-			width  = box_dimensions.y * 2,
+			height = BOX_DIMENSIONS.x * 2,
+			width  = BOX_DIMENSIONS.y * 2,
 			x      = p.x,
 			y      = p.y,
 		}
-		mouse_at := rl.GetMousePosition() + box_dimensions
+		mouse_at := rl.GetMousePosition() + BOX_DIMENSIONS
 		color := rl.PINK
 		if rl.CheckCollisionPointRec(mouse_at, rec) {
 			shift := rl.IsKeyDown(.LEFT_SHIFT) || rl.IsKeyDown(.RIGHT_SHIFT)
 			if shift {
 				color = rl.RED
-				// i32(rec.x - box_dimensions.x * 3),
-				// i32(rec.y - box_dimensions.y * 3),
-
-				at = {f32(rec.x - box_dimensions.x * 0.5), f32(rec.y - box_dimensions.y * 2)}
+				at = {f32(rec.x - BOX_DIMENSIONS.x * 0.5), f32(rec.y - BOX_DIMENSIONS.y * 2)}
 				should_draw = true
 			}
 			if rl.IsMouseButtonDown(.LEFT) && shift {
@@ -81,7 +74,7 @@ draw_blocks :: proc() {
 			}
 		}
 		rot := b2d.Rot_GetAngle(b2d.Body_GetRotation(block.body_id))
-		rl.DrawRectanglePro(rec, box_dimensions, rl.RAD2DEG * rot, color)
+		rl.DrawRectanglePro(rec, BOX_DIMENSIONS, rl.RAD2DEG * rot, color)
 	}
 
 	if should_draw {
@@ -89,14 +82,15 @@ draw_blocks :: proc() {
 	}
 
 	#reverse for idx in to_remove {
-		b := Blocks[idx]
+		b := global_blocks[idx]
 		b2d.DestroyShape(b.shape_id)
 		b2d.DestroyBody(b.body_id)
-		ordered_remove(&Blocks, idx)
+		ordered_remove(&global_blocks, idx)
 	}
 }
 
 main :: proc() {
+	rl.SetTraceLogLevel(.NONE)
 	rl.InitWindow(W_WIDTH, W_HEIGHT, "amogus")
 	rl.SetTargetFPS(60)
 	b2d.SetLengthUnitsPerMeter(LENGTH_UNIT)
@@ -106,8 +100,6 @@ main :: proc() {
 
 	world := b2d.CreateWorld(worldDef)
 	defer b2d.DestroyWorld(world)
-
-	box_dimensions := b2d.Vec2{64, 64}
 
 	box_def := b2d.DefaultBodyDef()
 	box_def.type = .dynamicBody
@@ -120,7 +112,7 @@ main :: proc() {
 	box := b2d.CreateBody(world, box_def)
 
 	defer b2d.DestroyBody(box)
-	polygon := b2d.MakeBox(box_dimensions.x, box_dimensions.y)
+	polygon := b2d.MakeBox(BOX_DIMENSIONS.x, BOX_DIMENSIONS.y)
 	box_shape_id := b2d.CreatePolygonShape(box, box_shape_def, polygon)
 	defer b2d.DestroyShape(box_shape_id)
 
@@ -137,10 +129,8 @@ main :: proc() {
 	defer b2d.DestroyBody(ground_id)
 	defer b2d.DestroyShape(ground_shape)
 
-
 	b2d.Body_SetAngularVelocity(box, -10)
 	b2d.Body_SetLinearVelocity(box, -5)
-
 
 	initial_down := rl.Vector2{0, 0}
 	mouse_down := false
@@ -165,14 +155,14 @@ main :: proc() {
 		{
 			p := b2d.Body_GetWorldPoint(box, {0, 0})
 			rec := rl.Rectangle {
-				height = box_dimensions.x * 2,
-				width  = box_dimensions.y * 2,
+				height = BOX_DIMENSIONS.x * 2,
+				width  = BOX_DIMENSIONS.y * 2,
 				x      = p.x,
 				y      = p.y,
 			}
 			rot := b2d.Rot_GetAngle(b2d.Body_GetRotation(box))
 			color := rl.BLUE
-			mouse_at := rl.GetMousePosition() + box_dimensions
+			mouse_at := rl.GetMousePosition() + BOX_DIMENSIONS
 			if rl.CheckCollisionPointRec(mouse_at, rec) {
 				if rl.IsMouseButtonDown(.LEFT) && !mouse_down {
 					initial_down = mouse_at
@@ -182,12 +172,19 @@ main :: proc() {
 			}
 			if mouse_down {
 				color = rl.DARKGREEN
+				rl.DrawLine(
+					i32(initial_down.x),
+					i32(initial_down.y),
+					i32(mouse_at.x),
+					i32(mouse_at.y),
+					rl.LIME,
+				)
 			}
-			rl.DrawRectanglePro(rec, box_dimensions, rl.RAD2DEG * rot, color)
+			rl.DrawRectanglePro(rec, BOX_DIMENSIONS, rl.RAD2DEG * rot, color)
 
 			if !rl.IsMouseButtonDown(.LEFT) && mouse_down {
 				mouse_down = false
-				mouse_now := rl.GetMousePosition() + box_dimensions
+				mouse_now := rl.GetMousePosition() + BOX_DIMENSIONS
 				diff_y := (initial_down.y - mouse_now.y) * 2
 
 				b2d.Body_SetLinearVelocity(
@@ -198,20 +195,19 @@ main :: proc() {
 				initial_down = {0, 0}
 			}
 			if pause {
-				rec.x += box_dimensions.x
-				rec.y += box_dimensions.y
+				rec.x += BOX_DIMENSIONS.x
+				rec.y += BOX_DIMENSIONS.y
 				v := b2d.Body_GetLinearVelocity(box)
 
 				rl.DrawText(
 					fmt.caprintf("y: %f m/s\n\nx: %f m/s", v.y, v.x),
-					i32(rec.x - box_dimensions.x * 3),
-					i32(rec.y - box_dimensions.y * 3),
+					i32(rec.x - BOX_DIMENSIONS.x * 3),
+					i32(rec.y - BOX_DIMENSIONS.y * 3),
 					30,
 					rl.GOLD,
 				)
 			}
 		}
-
 
 		{
 			p := b2d.Body_GetWorldPoint(ground_id, {0, 0})
