@@ -91,7 +91,7 @@ draw_blocks :: proc() {
 
 main :: proc() {
 	rl.SetTraceLogLevel(.NONE)
-	rl.InitWindow(W_WIDTH, W_HEIGHT, "amogus")
+	rl.InitWindow(W_WIDTH, W_HEIGHT, "drop")
 	rl.SetTargetFPS(60)
 	b2d.SetLengthUnitsPerMeter(LENGTH_UNIT)
 
@@ -136,7 +136,6 @@ main :: proc() {
 	mouse_down := false
 	pause := false
 	for !rl.WindowShouldClose() {
-		// dt := rl.GetFrameTime()
 		dt := rl.GetFrameTime()
 		if !pause {
 			if mouse_down {
@@ -172,13 +171,7 @@ main :: proc() {
 			}
 			if mouse_down {
 				color = rl.DARKGREEN
-				rl.DrawLine(
-					i32(initial_down.x),
-					i32(initial_down.y),
-					i32(mouse_at.x),
-					i32(mouse_at.y),
-					rl.LIME,
-				)
+				rl.DrawLineEx(initial_down, mouse_at, 3.0, rl.LIME)
 			}
 			rl.DrawRectanglePro(rec, BOX_DIMENSIONS, rl.RAD2DEG * rot, color)
 
